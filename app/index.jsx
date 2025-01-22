@@ -2,12 +2,56 @@ import {View, Text, TextInput, StyleSheet, ImageBackground, Pressable, FlatList}
 import icon from "../assets/images/icon.png"
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
-import { MENU_ITEMS } from "@/constants/MenuItems";
+import { useState, useContext, useEffect } from "react";
+import { ThemeContext } from "@/context/themeContext";
+import { data } from "@/constants/Data";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import {Inter_500Medium, useFonts} from "@expo-google-fonts/inter";
+import {Octicons} from "@expo/vector-icons";
+import Animated, { LinearTransition } from "react-native-reanimated";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StatusBar } from "expo-status-bar";
+
 const app = () => {
-    const [todos, setTodos] = useState(MENU_ITEMS.sort((a,b) => b.id - a.id));
+    const { colorScheme, setColorScheme, theme } = useContext(ThemeContext)
+    const [todos, setTodos] = useState([]);
     const [text, setText] = useState('')
+    const [loaded, error] = useFonts({Inter_500Medium})
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const  jsonValue = await AsyncStorage.getItem("TodoApp")
+                const storageTodos = jsonValue != null ? JSON.parse(jsonValue) : null
+                if(storageTodos && storageTodos.length) {
+                    setTodos(storageTodos.sort((a,b) => b.id - a.id))
+                } else  {
+                    setTodos(data.sort((a,b) => b.id - a.id))
+                }
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        fetchData()
+    }, [])
+
+    useEffect(() => {
+        const storeData = async () => {
+            try {
+                const  jsonValue = JSON.stringify(todos)
+                await AsyncStorage.setItem("TodoApp", jsonValue)
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        storeData()
+    }, [todos])
+
+    if(!loaded && !error){
+        return null
+    }
+
+    const styles = createStyles(theme, colorScheme)
 
     const addTodo = () => {
         if (text.trim()){
@@ -50,118 +94,136 @@ const app = () => {
                 <Pressable onPress={addTodo} style={styles.addButtom}>
                     <Text style={styles.addButtomText}>Add</Text>
                 </Pressable>
+                <Pressable onPress={ () => setColorScheme(colorScheme === 'light' ? 'dark' : 'light')}
+                style={{ marginLeft: 10 }}>
+                    {
+                        colorScheme === 'dark'
+                        ? <Octicons name="moon" size={36} color={theme.text}
+                        selectable={undefined} style={{ width: 36 }} />
+                        : <Octicons name="sun" size={36} color={theme.text}
+                        selectable={undefined} style={{ width: 36 }} />
+                    }
+                </Pressable>
             </View>
 
-            <FlatList
+            <Animated.FlatList
                 data={todos}
                 renderItem={renderItem}
                 keyExtractor={todos => todos.id}
-                contentContainerStyle={{ flexGrow: 1 }}/>
+                contentContainerStyle={{ flexGrow: 1 }}
+                itemLayoutAnimation={LinearTransition}
+                keyboardDismissMode="on-drag"
+            />
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'}/>
         </SafeAreaView>
     );
 }
 
 export default app;
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'black'
-        // flexDirection: "column",
-    },
-    inputContainer: {
-        flexDirection: "row",
-        alignItems: 'center',
-        marginBottom: 10,
-        padding: 10,
-        width: '100%',
-        maxWidth: 1024,
-        marginHorizontal: "auto",
-        pointerEvents: "auto",
-    },
-    input: {
-        flex: 1,
-        borderColor: 'gray',
-        borderWidth: 1,
-        borderRadius: 5,
-        padding: 10,
-        marginRight: 10,
-        fontSize: 18,
-        minWidth: 0,
-        color: 'white',
-    },
-    todoItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 4,
-        padding: 10,
-        borderBottomColor: "gray",
-        borderBottomWidth: 1,
-        width: "100%",
-        maxWidth: 1024,
-        marginHorizontal: "auto",
-        pointerEvents: "auto",
-    },
-    todoText: {
-        flex: 1,
-        fontSize: 18,
-        color: 'white',
-    },
-    completeText: {
-        textDecorationLine: "underline",
-        color: 'gray',
-    },
-    addButtom: {
-        backgroundColor: 'white',
-        borderRadius: 5,
-        padding: 10,
-    },
-    addButtomText: {
-        fontSize: 18,
-        color: 'black',
-    },
-    image: {
-        width: '100%',
-        height: '100%',
-        flex: 1,
-        resizeMode: 'cover',
-        justifyContent: 'center',
-    },
-    title: {
-        color: 'white',
-        fontSize: 42,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        marginBottom: 120
-    },
-    link: {
-        color: 'white',
-        fontSize: 42,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        textDecorationLine: 'underline',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        padding: 4
-    },
-    button: {
-      height: 60,
-      width: 150,
-      justifyContent: 'center',
-      borderRadius: 20,
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      padding: 6,
-      marginBottom: 50
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        padding: 4
-    }
-})
+function createStyles(theme, colorScheme) {
+
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.background
+            // flexDirection: "column",
+        },
+        inputContainer: {
+            flexDirection: "row",
+            alignItems: 'center',
+            marginBottom: 10,
+            padding: 10,
+            width: '100%',
+            maxWidth: 1024,
+            marginHorizontal: "auto",
+            pointerEvents: "auto",
+        },
+        input: {
+            flex: 1,
+            borderColor: 'gray',
+            fontFamily: 'Inter_500Medium',
+            borderWidth: 1,
+            borderRadius: 5,
+            padding: 10,
+            marginRight: 10,
+            fontSize: 18,
+            minWidth: 0,
+            color: theme.text,
+        },
+        todoItem: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 4,
+            padding: 10,
+            borderBottomColor: "gray",
+            borderBottomWidth: 1,
+            width: "100%",
+            maxWidth: 1024,
+            marginHorizontal: "auto",
+            pointerEvents: "auto",
+        },
+        todoText: {
+            flex: 1,
+            fontSize: 18,
+            color: theme.text,
+        },
+        completeText: {
+            textDecorationLine: "line-through",
+            color: 'gray',
+        },
+        addButtom: {
+            backgroundColor: theme.button,
+            borderRadius: 5,
+            padding: 10,
+        },
+        addButtomText: {
+            fontSize: 18,
+            color: colorScheme === 'dark' ? 'black' : 'white',
+        },
+        image: {
+            width: '100%',
+            height: '100%',
+            flex: 1,
+            resizeMode: 'cover',
+            justifyContent: 'center',
+        },
+        title: {
+            color: 'white',
+            fontSize: 42,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            marginBottom: 120
+        },
+        link: {
+            color: 'white',
+            fontSize: 42,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            textDecorationLine: 'underline',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            padding: 4
+        },
+        button: {
+            height: 60,
+            width: 150,
+            justifyContent: 'center',
+            borderRadius: 20,
+            backgroundColor: 'rgba(0,0,0,0.75)',
+            padding: 6,
+            marginBottom: 50
+        },
+        buttonText: {
+            color: 'white',
+            fontSize: 16,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            padding: 4
+        }
+    })
+}
 
 
 //     <View style={styles.container}>

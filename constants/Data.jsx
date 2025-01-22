@@ -1,4 +1,4 @@
-export const MENU_ITEMS = [
+export const data = [
     {
         "id": 1,
         "title": "Espresso",

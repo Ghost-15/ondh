@@ -1,7 +1,7 @@
 import {StyleSheet, Appearance, Platform,
     SafeAreaView, ScrollView, FlatList, View, Text, Image} from "react-native";
 import { Colors } from "@/constants/Colors";
-import {MENU_ITEMS} from "@/constants/MenuItems";
+import { data } from "@/constants/Data";
 
 export default function MenuScreen() {
     const colorScheme = Appearance.getColorScheme()
@@ -15,7 +15,7 @@ export default function MenuScreen() {
     return(
         <Container>
             <FlatList
-                data={MENU_ITEMS}
+                data={ data }
                 keyExtractor={(item) => item.id.toString()}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.contentContainer}
