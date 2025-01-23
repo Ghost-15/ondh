@@ -1,6 +1,6 @@
 import {View, Text, TextInput, StyleSheet, ImageBackground, Pressable, FlatList} from 'react-native';
 import icon from "../assets/images/icon.png"
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useContext, useEffect } from "react";
 import { ThemeContext } from "@/context/themeContext";
@@ -17,6 +17,7 @@ const app = () => {
     const [todos, setTodos] = useState([]);
     const [text, setText] = useState('')
     const [loaded, error] = useFonts({Inter_500Medium})
+    const router = useRouter()
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,13 +69,19 @@ const app = () => {
     const removeTodo = (id) => {
         setTodos(todos.filter(todo => todo.id !== id))
     }
+    const handlePress = (id) => {
+        router.push('/todos/'+id)
+    }
     const renderItem = ({ item }) => (
         <View style={styles.todoItem}>
-            <Text
-                style={[styles.todoText, item.complete && styles.completeText]}
-                onPress={ () => toggleTodo(item.id) }>
-                {item.title}
-            </Text>
+            <Pressable
+                onPress={ () => handlePress(item.id) }
+                onLongPress={ () => toggleTodo(item.id) }>
+                <Text
+                    style={[styles.todoText, item.complete && styles.completeText]}>
+                    {item.title}
+                </Text>
+            </Pressable>
             <Pressable onPress={ () => removeTodo(item.id)}>
                 <MaterialCommunityIcons name="delete-circle" size={36} color="red" />
             </Pressable>
@@ -86,6 +93,7 @@ const app = () => {
             <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
+                    // maxLength={30}
                     placeholder="add new todo"
                     placeholderTextColor="gray"
                     value={text}
